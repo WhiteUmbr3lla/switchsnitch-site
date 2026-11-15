@@ -4,19 +4,84 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SwitchSnitch</title>
+<meta name="description" content="Android app that shows which switch, port and VLAN a wall jack goes to, using a USB Ethernet adapter and the switch's LLDP/CDP announcements. Offline and listen-only.">
 <style>
-  :root { --bg: #fff; --text: #1a1a1a; --accent: #b8860b; }
-  @media (prefers-color-scheme: dark) { :root { --bg: #121212; --text: #e8e8e8; --accent: #f5c518; } }
+  :root { --bg: #fff; --text: #1a1a1a; --muted: #555; --line: #ddd; --accent: #b8860b; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #121212; --text: #e8e8e8; --muted: #aaa; --line: #333; --accent: #f5c518; } }
   body { background: var(--bg); color: var(--text); font: 17px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; margin: 0; }
-  main { max-width: 680px; margin: 0 auto; padding: 32px 16px; }
+  main { max-width: 680px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 1.8em; margin-bottom: 0.2em; }
+  h2 { font-size: 1.15em; margin-top: 2em; }
+  .muted { color: var(--muted); }
   a { color: var(--accent); }
+  .table { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.9em; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  code { font-size: 0.9em; }
 </style>
 </head>
 <body>
 <main>
 <h1>SwitchSnitch</h1>
-<p>Find out which network switch, port and VLAN your Android phone is plugged into, using a USB Ethernet adapter and the switch's LLDP/CDP announcements.</p>
-<p><a href="privacy/">Privacy policy</a> · Support: <a href="mailto:whiteumbr3lla@proton.me">whiteumbr3lla@proton.me</a></p>
+<p>Find out which network switch, port and VLAN a wall jack goes to. Plug a USB Ethernet adapter into your Android phone, connect it to the jack, and SwitchSnitch shows what the switch announces over LLDP or CDP.</p>
+<p><a href="https://play.google.com/store/apps/details?id=net.switchsnitch">Get it on Google Play</a> · Free, no ads, no account.</p>
+
+<h2>Offline and listen-only</h2>
+<p>The app has no internet permission and never transmits on the network you plug into. It only reads what the switch already sends. Nothing leaves your phone unless you share it yourself. See the <a href="privacy/">privacy policy</a>.</p>
+
+<h2>What you need</h2>
+<ul>
+  <li>An Android phone with a USB-C port that supports USB accessories (USB OTG). Most phones from the last few years do. No root needed.</li>
+  <li>A USB Ethernet adapter that works with the app (see below).</li>
+  <li>A switch port with LLDP or CDP turned on. Most managed switches have LLDP on by default.</li>
+</ul>
+
+<h2>How to use it</h2>
+<ol>
+  <li>Open SwitchSnitch and plug the adapter into the phone. Allow USB access when Android asks.</li>
+  <li>Plug the network cable into the adapter.</li>
+  <li>A card appears when the switch sends its next announcement, usually within a few seconds of the link coming up. Otherwise switches repeat it every 30 seconds (LLDP) or 60 seconds (CDP) by default. Tap a card for all details, long-press it to share.</li>
+</ol>
+
+<h2>Adapters</h2>
+<p>SwitchSnitch works with adapters that offer a standard USB Ethernet mode (CDC-NCM or CDC-ECM), and with RTL8153 adapters in Realtek's own mode. Tested so far:</p>
+<div class="table"><table>
+  <tr><th>Chip</th><th>Speed</th><th>Tested adapter (USB ID)</th></tr>
+  <tr><td>Realtek RTL8153</td><td>1 Gb</td><td>Lenovo USB-C to LAN (<code>17EF:720C</code>)</td></tr>
+  <tr><td>Realtek RTL8153 (newer revision, likely 8153B)</td><td>1 Gb</td><td>Generic USB 10/100/1000 LAN (<code>0BDA:8153</code>)</td></tr>
+  <tr><td>Realtek RTL8156</td><td>2.5 Gb</td><td>Lenovo 2.5G USB-C to RJ45 (<code>0BDA:8156</code>)</td></tr>
+  <tr><td>Realtek RTL8157</td><td>5 Gb</td><td>Generic 5G LAN (<code>0BDA:8157</code>)</td></tr>
+  <tr><td>Realtek RTL8159</td><td>10 Gb</td><td>Generic 10G LAN (<code>0BDA:815A</code>)</td></tr>
+  <tr><td>ASIX AX88279</td><td>2.5 Gb</td><td>Generic (<code>0B95:1790</code>)</td></tr>
+</table></div>
+<p><strong>Not supported:</strong> older ASIX adapters (AX88179, AX88772) and Microchip LAN78xx adapters. They only have a vendor-specific mode the app can't use. Newer ASIX chips (AX88179A/B, AX88772D/E) offer the standard mode and should work, but are untested.</p>
+<p>If your adapter isn't supported, the app says so and names the adapter. Send us the diagnostic log (below) and we'll look at adding it.</p>
+<p class="muted">Tested on Nokia 8.3 5G (Android 12), Samsung Galaxy S21 (Android 15), S23 and A07s (Android 16), against HP/Aruba 2530 and Aruba 2540 switches. CDP has been tested with simulated Cisco announcements, not yet on a real Cisco switch.</p>
+
+<h2>Limitations</h2>
+<ul>
+  <li><strong>It only shows what the switch announces.</strong> If LLDP and CDP are off on the port, or an unmanaged switch sits in between, no card appears. After about a minute with no announcement, the app says so.</li>
+  <li><strong>Voice VLAN over LLDP says "Phones only".</strong> Switches usually send the voice VLAN only to devices that identify themselves as IP phones. SwitchSnitch never transmits, so it doesn't get it. Over CDP the voice VLAN is shown.</li>
+  <li><strong>VLAN is the port's untagged (native) VLAN.</strong> Tagged VLANs on a trunk port aren't listed.</li>
+  <li><strong>No IP address, DHCP or ping.</strong> The app listens only, so it doesn't join the network.</li>
+  <li><strong>Your phone's own Ethernet stays off while the app uses the adapter.</strong> Unplug and replug the adapter to give it back to Android.</li>
+  <li><strong>Several switches on one jack?</strong> That means something is passing announcements through, such as a mirror (monitor) port or an unmanaged device between switches. The app shows everything it hears.</li>
+  <li>It keeps your last 10 connections, one per switch port.</li>
+</ul>
+
+<h2>Troubleshooting</h2>
+<ul>
+  <li><strong>Nothing happens when I plug in the adapter:</strong> open the app first, then plug in the adapter, and allow USB access. Check that the adapter is in the list above.</li>
+  <li><strong>"Link is up" but no card:</strong> LLDP/CDP may be off on that port. Try a port you know works, or ask your network admin.</li>
+  <li><strong>Anything else:</strong> in the app, open ⋮ → <em>Share diagnostic log</em> and email it to us. It contains your phone model, Android version, the adapter and the app's recent log lines, which can include switch names and IP addresses. You can read and edit it before sending.</li>
+</ul>
+
+<h2>Use responsibly</h2>
+<p>Only connect to networks you own or have permission to use. Even though SwitchSnitch never transmits, plugging a device into a network port may be against your organization's policy, and some networks log or disable ports when an unknown device connects.</p>
+<p>SwitchSnitch is provided "as is", without warranty of any kind. To the extent permitted by law, we are not liable for any damage or loss arising from its use, including use on networks without permission.</p>
+
+<h2>Contact</h2>
+<p>Support: <a href="mailto:whiteumbr3lla@proton.me">whiteumbr3lla@proton.me</a> · <a href="privacy/">Privacy policy</a></p>
 </main>
 </body>
 </html>
